@@ -187,6 +187,7 @@ jobs:
               - 'frontend/**'
               - 'backend/lib/frontend-stack.ts'
             prod:
+              - '.github/workflows/proptimizer-ci-cd.yml'
               - 'backend/cdk.json'
               - 'backend/cdk.context.json'
 
@@ -234,6 +235,11 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      VITE_OPTIMIZE_STREAM_URL: ${{ secrets.VITE_OPTIMIZE_STREAM_URL }}
+      VITE_CHAT_STREAM_URL: ${{ secrets.VITE_CHAT_STREAM_URL }}
+      VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID }}
+      VITE_COGNITO_USER_POOL_CLIENT_ID: ${{ secrets.VITE_COGNITO_USER_POOL_CLIENT_ID }}
 
     steps:
       - name: Checkout
@@ -247,6 +253,28 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate frontend build env
+        if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true'
+        shell: bash
+        run: |
+          REQUIRED=(
+            VITE_API_BASE_URL
+            VITE_OPTIMIZE_STREAM_URL
+            VITE_CHAT_STREAM_URL
+            VITE_COGNITO_USER_POOL_ID
+            VITE_COGNITO_USER_POOL_CLIENT_ID
+          )
+          MISSING=0
+          for VAR in "${REQUIRED[@]}"; do
+            if [[ -z "${!VAR}" ]]; then
+              echo "::error::Missing required secret: $VAR"
+              MISSING=1
+            fi
+          done
+          if [[ $MISSING -eq 1 ]]; then
+            exit 1
+          fi
 
       - name: Build frontend (for FrontendStack asset)
         if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true'
