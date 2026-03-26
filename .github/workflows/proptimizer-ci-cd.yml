@@ -158,9 +158,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
-      deploy_backend: ${{ steps.filter.outputs.backend }}
-      deploy_frontend: ${{ steps.filter.outputs.frontend }}
-      deploy_prod: ${{ steps.filter.outputs.prod }}
+      deploy_backend: ${{ steps.evaluate.outputs.deploy_backend }}
+      deploy_frontend: ${{ steps.evaluate.outputs.deploy_frontend }}
       should_deploy: ${{ steps.evaluate.outputs.should_deploy }}
 
     steps:
@@ -175,35 +174,54 @@ jobs:
         with:
           filters: |
             backend:
-              - 'backend/**'
+              - 'backend/lambda/**'
+              - 'backend/lib/api-stack.ts'
+              - 'backend/lib/auth-stack.ts'
+              - 'backend/lib/backend-stack.ts'
+              - 'backend/lib/database-stack.ts'
+              - 'backend/bin/**'
+              - 'backend/package.json'
               - 'shared/**'
+              - 'package-lock.json'
             frontend:
               - 'frontend/**'
+              - 'backend/lib/frontend-stack.ts'
             prod:
-              - '.github/workflows/proptimizer-ci-cd.yml'
-              - 'package.json'
-              - 'package-lock.json'
               - 'backend/cdk.json'
               - 'backend/cdk.context.json'
-              - 'backend/bin/**'
-              - 'backend/lib/**'
-              - 'backend/lambda/**'
 
       - name: Evaluate deploy decision
         id: evaluate
         shell: bash
         run: |
-          if [[ "${{ steps.filter.outputs.backend }}" == "true" || "${{ steps.filter.outputs.frontend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          DEPLOY_BACKEND=false
+          DEPLOY_FRONTEND=false
+
+          if [[ "${{ steps.filter.outputs.backend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
+            DEPLOY_BACKEND=true
           fi
+
+          if [[ "${{ steps.filter.outputs.frontend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
+            DEPLOY_FRONTEND=true
+          fi
+
+          if [[ "$DEPLOY_BACKEND" == "true" || "$DEPLOY_FRONTEND" == "true" ]]; then
+            SHOULD_DEPLOY=true
+          else
+            SHOULD_DEPLOY=false
+          fi
+
+          echo "deploy_backend=$DEPLOY_BACKEND" >> "$GITHUB_OUTPUT"
+          echo "deploy_frontend=$DEPLOY_FRONTEND" >> "$GITHUB_OUTPUT"
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
 
       - name: Print deploy decision
         run: |
           echo "backend changed: ${{ steps.filter.outputs.backend }}"
           echo "frontend changed: ${{ steps.filter.outputs.frontend }}"
           echo "prod changed: ${{ steps.filter.outputs.prod }}"
+          echo "deploy backend: ${{ steps.evaluate.outputs.deploy_backend }}"
+          echo "deploy frontend: ${{ steps.evaluate.outputs.deploy_frontend }}"
           echo "should deploy: ${{ steps.evaluate.outputs.should_deploy }}"
 
   deploy_aws:
@@ -231,7 +249,7 @@ jobs:
         run: npm ci
 
       - name: Build frontend (for FrontendStack asset)
-        if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true' || needs.detect_deploy_changes.outputs.deploy_prod == 'true'
+        if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true'
         run: npm run build --prefix frontend
 
       - name: Configure AWS credentials
@@ -250,11 +268,11 @@ jobs:
         run: |
           STACKS=()
 
-          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_backend }}" == "true" || "${{ needs.detect_deploy_changes.outputs.deploy_prod }}" == "true" ]]; then
+          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_backend }}" == "true" ]]; then
             STACKS+=("ProptimizerApiStack")
           fi
 
-          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_frontend }}" == "true" || "${{ needs.detect_deploy_changes.outputs.deploy_prod }}" == "true" ]]; then
+          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_frontend }}" == "true" ]]; then
             STACKS+=("ProptimizerFrontendStack")
           fi
 

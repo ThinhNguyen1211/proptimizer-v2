@@ -23,7 +23,6 @@ export class FrontendStack extends cdk.Stack {
     // ============================================================
 
     this.websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
-      bucketName: 'proptimizer-frontend-prod',
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'index.html', // SPA fallback
       publicReadAccess: false, // CloudFront OAI will handle access
