@@ -153,11 +153,64 @@ jobs:
           path: proptimizer-v${{ steps.bump_ext_version.outputs.next_version }}.zip
           if-no-files-found: error
 
-  deploy_aws:
-    name: Deploy Backend + Frontend (CDK)
+  detect_deploy_changes:
+    name: Detect Deploy-Relevant Changes
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [ci_quality, build_extension_zip]
+    outputs:
+      deploy_backend: ${{ steps.filter.outputs.backend }}
+      deploy_frontend: ${{ steps.filter.outputs.frontend }}
+      deploy_prod: ${{ steps.filter.outputs.prod }}
+      should_deploy: ${{ steps.evaluate.outputs.should_deploy }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'shared/**'
+            frontend:
+              - 'frontend/**'
+            prod:
+              - '.github/workflows/proptimizer-ci-cd.yml'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'backend/cdk.json'
+              - 'backend/cdk.context.json'
+              - 'backend/bin/**'
+              - 'backend/lib/**'
+              - 'backend/lambda/**'
+
+      - name: Evaluate deploy decision
+        id: evaluate
+        shell: bash
+        run: |
+          if [[ "${{ steps.filter.outputs.backend }}" == "true" || "${{ steps.filter.outputs.frontend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Print deploy decision
+        run: |
+          echo "backend changed: ${{ steps.filter.outputs.backend }}"
+          echo "frontend changed: ${{ steps.filter.outputs.frontend }}"
+          echo "prod changed: ${{ steps.filter.outputs.prod }}"
+          echo "should deploy: ${{ steps.evaluate.outputs.should_deploy }}"
+
+  deploy_aws:
+    name: Deploy Backend + Frontend (CDK)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect_deploy_changes.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    needs: [ci_quality, build_extension_zip, detect_deploy_changes]
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -178,6 +231,7 @@ jobs:
         run: npm ci
 
       - name: Build frontend (for FrontendStack asset)
+        if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true' || needs.detect_deploy_changes.outputs.deploy_prod == 'true'
         run: npm run build --prefix frontend
 
       - name: Configure AWS credentials
@@ -190,6 +244,24 @@ jobs:
       - name: Verify AWS caller identity
         run: aws sts get-caller-identity
 
-      - name: Deploy CDK stacks (API + Frontend)
+      - name: Deploy CDK stacks (conditional)
         working-directory: backend
-        run: npx cdk deploy ProptimizerApiStack ProptimizerFrontendStack --require-approval never
+        shell: bash
+        run: |
+          STACKS=()
+
+          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_backend }}" == "true" || "${{ needs.detect_deploy_changes.outputs.deploy_prod }}" == "true" ]]; then
+            STACKS+=("ProptimizerApiStack")
+          fi
+
+          if [[ "${{ needs.detect_deploy_changes.outputs.deploy_frontend }}" == "true" || "${{ needs.detect_deploy_changes.outputs.deploy_prod }}" == "true" ]]; then
+            STACKS+=("ProptimizerFrontendStack")
+          fi
+
+          if [[ ${#STACKS[@]} -eq 0 ]]; then
+            echo "No deploy-relevant changes detected. Skipping CDK deploy."
+            exit 0
+          fi
+
+          echo "Deploying stacks: ${STACKS[*]}"
+          npx aws-cdk@latest deploy "${STACKS[@]}" --require-approval never
