@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Proptimizer",
+  "version": "1.0.6",
+  "description": "AI-powered prompt optimization for everyone",
+  "icons": {
+    "16": "assets/proptimizer-16x16.png",
+    "48": "assets/proptimizer-48x48.png",
+    "128": "assets/proptimizer-128x128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ask Proptimizer",
+    "default_icon": {
+      "16": "assets/proptimizer-16x16.png",
+      "48": "assets/proptimizer-48x48.png",
+      "128": "assets/proptimizer-128x128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": false,
+      "css": [
+        "assets/content.css"
+      ]
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://d3jqm7so635aqb.cloudfront.net/*"
+    ]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.execute-api.ap-southeast-1.amazonaws.com/*",
+    "https://*.lambda-url.ap-southeast-1.on.aws/*"
+  ]
+}

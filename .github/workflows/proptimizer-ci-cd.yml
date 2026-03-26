@@ -1,0 +1,195 @@
+name: Proptimizer CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: proptimizer-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  ci_quality:
+    name: CI - TypeCheck, Lint, Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type checking (backend)
+        run: npx tsc -p backend/tsconfig.json --noEmit
+
+      - name: Type checking (frontend)
+        run: npx tsc -p frontend/tsconfig.app.json --noEmit
+
+      - name: Type checking (extension)
+        run: npx tsc -p extension/tsconfig.json --noEmit
+
+      - name: Lint (frontend)
+        run: npm run lint --prefix frontend
+
+      - name: Security audit (backend)
+        run: npm audit --workspace backend --audit-level=high
+
+      - name: Security audit (frontend)
+        run: npm audit --workspace frontend --audit-level=high
+
+      - name: Security audit (extension)
+        run: npm audit --workspace extension --audit-level=high
+
+  build_extension_zip:
+    name: Build Extension ZIP
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [ci_quality]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute next extension version from tags
+        id: bump_ext_version
+        shell: bash
+        run: |
+          git fetch --tags --force
+          node <<'NODE'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          const manifestPath = 'extension/manifest.json';
+          const pkgPath = 'extension/package.json';
+
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+          const parseSemver = (v) => {
+            const m = String(v || '').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
+            return m ? { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) } : null;
+          };
+
+          const compare = (a, b) => {
+            if (a.major !== b.major) return a.major - b.major;
+            if (a.minor !== b.minor) return a.minor - b.minor;
+            return a.patch - b.patch;
+          };
+
+          const manifestVer = parseSemver(manifest.version);
+          if (!manifestVer) throw new Error(`Invalid manifest version: ${manifest.version}`);
+
+          const tagsRaw = execSync('git tag --list "proptimizer-v*"', { encoding: 'utf8' }).trim();
+          const tagVersions = tagsRaw
+            ? tagsRaw
+                .split(/\r?\n/)
+                .map(t => t.replace(/^proptimizer-v/, '').trim())
+                .map(parseSemver)
+                .filter(Boolean)
+            : [];
+
+          const base = [manifestVer, ...tagVersions].sort(compare).pop();
+          const nextVersion = `${base.major}.${base.minor}.${base.patch + 1}`;
+
+          manifest.version = nextVersion;
+          pkg.version = nextVersion;
+
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+
+          console.log(`Next extension version: ${nextVersion}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `next_version=${nextVersion}\n`);
+          NODE
+
+      - name: Create and push extension version tag
+        shell: bash
+        run: |
+          TAG="proptimizer-v${{ steps.bump_ext_version.outputs.next_version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Skipping tag push."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Build extension
+        run: npm run build --prefix extension
+
+      - name: Remove dist/src if exists
+        run: rm -rf extension/dist/src
+
+      - name: Package extension zip
+        shell: bash
+        run: |
+          VERSION="${{ steps.bump_ext_version.outputs.next_version }}"
+          cd extension/dist
+          zip -r "../../proptimizer-v${VERSION}.zip" .
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proptimizer-extension-v${{ steps.bump_ext_version.outputs.next_version }}
+          path: proptimizer-v${{ steps.bump_ext_version.outputs.next_version }}.zip
+          if-no-files-found: error
+
+  deploy_aws:
+    name: Deploy Backend + Frontend (CDK)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [ci_quality, build_extension_zip]
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend (for FrontendStack asset)
+        run: npm run build --prefix frontend
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Verify AWS caller identity
+        run: aws sts get-caller-identity
+
+      - name: Deploy CDK stacks (API + Frontend)
+        working-directory: backend
+        run: npx cdk deploy ProptimizerApiStack ProptimizerFrontendStack --require-approval never

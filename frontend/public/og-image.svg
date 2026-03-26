@@ -1,0 +1,92 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e1a"/>
+      <stop offset="40%" style="stop-color:#0d1525"/>
+      <stop offset="100%" style="stop-color:#111827"/>
+    </linearGradient>
+
+    <!-- Accent gradient for logo -->
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64ffda"/>
+      <stop offset="25%" style="stop-color:#00bcd4"/>
+      <stop offset="50%" style="stop-color:#6366f1"/>
+      <stop offset="75%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+
+    <!-- Text gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00bcd4"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+
+    <!-- Glow filter for logo -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Soft glow behind logo -->
+    <radialGradient id="softGlow" cx="50%" cy="42%" r="35%">
+      <stop offset="0%" style="stop-color:#00bcd4; stop-opacity:0.15"/>
+      <stop offset="50%" style="stop-color:#6366f1; stop-opacity:0.06"/>
+      <stop offset="100%" style="stop-color:#0a0e1a; stop-opacity:0"/>
+    </radialGradient>
+
+    <!-- Subtle grid pattern -->
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(99,102,241,0.04)" stroke-width="1"/>
+    </pattern>
+
+    <!-- Bottom accent line gradient -->
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#64ffda; stop-opacity:0"/>
+      <stop offset="20%" style="stop-color:#00bcd4; stop-opacity:1"/>
+      <stop offset="80%" style="stop-color:#6366f1; stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#a855f7; stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Ambient glow -->
+  <rect width="1200" height="630" fill="url(#softGlow)"/>
+
+  <!-- Decorative orbs -->
+  <circle cx="150" cy="100" r="200" fill="#00bcd4" opacity="0.02"/>
+  <circle cx="1050" cy="530" r="180" fill="#6366f1" opacity="0.03"/>
+
+  <!-- Lightning bolt logo (scaled up, centered) -->
+  <g transform="translate(600, 220) scale(5.5)" filter="url(#glow)">
+    <!-- Outer glow shape -->
+    <path d="M -8 -18 L 5 -5 L -1 -5 L 8 18 L -5 5 L 1 5 Z"
+          fill="url(#logoGrad)"
+          stroke="#64ffda"
+          stroke-width="0.5"
+          opacity="0.95"/>
+    <!-- Inner highlight -->
+    <path d="M -6 -15 L 3 -6 L -0.5 -6 L 6 15 L -3 6 L 0.5 6 Z"
+          fill="#64ffda"
+          opacity="0.5"/>
+    <!-- Bright center -->
+    <path d="M -4 -12 L 2 -7 L -0.2 -7 L 4 12 L -2 7 L 0.2 7 Z"
+          fill="#ffffff"
+          opacity="0.85"/>
+  </g>
+
+  <!-- App name -->
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="52" font-weight="700" letter-spacing="3" fill="url(#textGrad)">Proptimizer</text>
+
+  <!-- Tagline -->
+  <text x="600" y="468" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="400" letter-spacing="1.5" fill="#94a3b8">AI-Powered Prompt Engineering Platform</text>
+
+  <!-- Accent line at bottom -->
+  <rect x="200" y="540" width="800" height="2" rx="1" fill="url(#lineGrad)"/>
+
+  <!-- Domain -->
+  <text x="600" y="575" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="400" letter-spacing="2" fill="#475569">proptimizer.app</text>
+</svg>

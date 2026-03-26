@@ -1,0 +1,317 @@
+/**
+ * Proptimizer Brand Styles for AWS Amplify Authenticator
+ * Aggressive CSS overrides to match our blue #2563eb theme
+ */
+
+/* ============================================================
+   CSS VARIABLES - BRAND COLORS
+   ============================================================ */
+
+[data-amplify-theme] {
+  /* Background Colors */
+  --amplify-colors-background-primary: #ffffff;
+  --amplify-colors-background-secondary: #f9fafb;
+  
+  /* Brand Primary (Tailwind Blue 600) */
+  --amplify-colors-brand-primary-10: #dbeafe;
+  --amplify-colors-brand-primary-20: #bfdbfe;
+  --amplify-colors-brand-primary-40: #60a5fa;
+  --amplify-colors-brand-primary-60: #3b82f6;
+  --amplify-colors-brand-primary-80: #2563eb;
+  --amplify-colors-brand-primary-90: #1d4ed8;
+  --amplify-colors-brand-primary-100: #1e40af;
+  
+  /* Button Colors */
+  --amplify-components-button-primary-background-color: #2563eb;
+  --amplify-components-button-primary-hover-background-color: #1d4ed8;
+  --amplify-components-button-primary-active-background-color: #1e40af;
+  --amplify-components-button-primary-color: #ffffff;
+  
+  /* Input Focus Colors */
+  --amplify-components-fieldcontrol-focus-border-color: #2563eb;
+  
+  /* Tabs Active Color */
+  --amplify-components-tabs-item-active-color: #2563eb;
+  --amplify-components-tabs-item-active-border-color: #2563eb;
+  --amplify-components-tabs-item-hover-color: #1d4ed8;
+  
+  /* Font */
+  --amplify-components-text-color: #111827;
+  --amplify-fonts-default-variable: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================================
+   AUTHENTICATOR CONTAINER
+   ============================================================ */
+
+[data-amplify-authenticator] {
+  border-radius: 1rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #e5e7eb !important;
+  overflow: hidden;
+  background: white;
+}
+
+/* Remove default padding and add custom spacing */
+[data-amplify-authenticator] > div {
+  padding: 2rem !important;
+}
+
+/* ============================================================
+   FORM CONTAINER
+   ============================================================ */
+
+.amplify-authenticator__form {
+  padding: 0 !important;
+}
+
+/* ============================================================
+   TABS (SIGN IN / CREATE ACCOUNT)
+   ============================================================ */
+
+.amplify-tabs {
+  border-bottom: 2px solid #f3f4f6 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.amplify-tabs-item {
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  color: #6b7280 !important;
+  border-bottom: 3px solid transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+.amplify-tabs-item:hover {
+  color: #1d4ed8 !important;
+  background-color: #f9fafb !important;
+}
+
+.amplify-tabs-item[data-state="active"],
+.amplify-tabs-item[aria-selected="true"] {
+  color: #2563eb !important;
+  border-bottom-color: #2563eb !important;
+  background-color: transparent !important;
+}
+
+/* ============================================================
+   INPUT FIELDS
+   ============================================================ */
+
+.amplify-input,
+.amplify-select {
+  border-radius: 0.5rem !important;
+  border: 1px solid #d1d5db !important;
+  padding: 0.625rem 0.875rem !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+  background: white !important;
+}
+
+.amplify-input:hover,
+.amplify-select:hover {
+  border-color: #9ca3af !important;
+}
+
+.amplify-input:focus,
+.amplify-select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+  outline: none !important;
+}
+
+/* Input Labels */
+.amplify-label {
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  margin-bottom: 0.375rem !important;
+}
+
+/* Placeholder Text */
+.amplify-input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Primary Button (Sign In / Create Account) */
+.amplify-button--primary {
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  padding: 0.75rem 1.5rem !important;
+  background: #2563eb !important;
+  border: none !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+  margin-top: 0.5rem !important;
+}
+
+.amplify-button--primary:hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+.amplify-button--primary:active {
+  background: #1e40af !important;
+  transform: translateY(0);
+}
+
+/* Link Button (Back to Sign In, etc.) */
+.amplify-button--link {
+  color: #2563eb !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem !important;
+}
+
+.amplify-button--link:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline !important;
+}
+
+/* ============================================================
+   ALERTS & ERROR MESSAGES
+   ============================================================ */
+
+.amplify-alert {
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.amplify-alert--error {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #991b1b !important;
+}
+
+.amplify-alert--info {
+  background-color: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+/* ============================================================
+   CHECKBOX (REMEMBER ME)
+   ============================================================ */
+
+.amplify-checkbox {
+  accent-color: #2563eb !important;
+}
+
+.amplify-checkbox__label {
+  font-size: 0.875rem !important;
+  color: #4b5563 !important;
+  margin-left: 0.5rem !important;
+}
+
+/* ============================================================
+   PASSWORD FIELD SHOW/HIDE BUTTON
+   ============================================================ */
+
+.amplify-field-group__control button {
+  color: #6b7280 !important;
+  transition: color 0.2s ease !important;
+}
+
+.amplify-field-group__control button:hover {
+  color: #2563eb !important;
+}
+
+/* ============================================================
+   FOOTER LINKS
+   ============================================================ */
+
+.amplify-authenticator__footer {
+  margin-top: 1.5rem !important;
+  text-align: center !important;
+}
+
+.amplify-text--secondary {
+  color: #6b7280 !important;
+  font-size: 0.875rem !important;
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+
+.amplify-loader {
+  border-color: #2563eb !important;
+  border-right-color: transparent !important;
+}
+
+/* ============================================================
+   VERIFICATION CODE INPUT
+   ============================================================ */
+
+.amplify-field--confirmation-code input {
+  text-align: center !important;
+  letter-spacing: 0.5rem !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================
+   RESPONSIVE TWEAKS
+   ============================================================ */
+
+@media (max-width: 640px) {
+  [data-amplify-authenticator] > div {
+    padding: 1.5rem !important;
+  }
+  
+  .amplify-tabs-item {
+    padding: 0.625rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .amplify-button--primary {
+    padding: 0.625rem 1.25rem !important;
+  }
+}
+
+/* ============================================================
+   AMPLIFY UI V6 SPECIFIC OVERRIDES
+   ============================================================ */
+
+/* Remove default box shadows on inputs */
+.amplify-field-group__field-wrapper {
+  box-shadow: none !important;
+}
+
+/* Clean up field spacing */
+.amplify-field {
+  margin-bottom: 1.25rem !important;
+}
+
+/* Header text styling */
+.amplify-heading {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+/* Text color fixes */
+.amplify-text {
+  color: #4b5563 !important;
+}
+
+/* Link styling consistency */
+a.amplify-button {
+  color: #2563eb !important;
+  text-decoration: none !important;
+}
+
+a.amplify-button:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline !important;
+}

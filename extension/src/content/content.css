@@ -1,0 +1,8 @@
+/* Proptimizer Content Script Styles */
+#proptimizer-floating-menu {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#proptimizer-floating-menu button:active {
+  transform: scale(0.95);
+}

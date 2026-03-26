@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512px" height="512px" viewBox="0 0 40 40" preserveAspectRatio="xMidYMid meet">
+    <defs>
+        <linearGradient id="lightning-main" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#64ffda" />
+            <stop offset="25%" style="stop-color:#00bcd4" />
+            <stop offset="50%" style="stop-color:#6366f1" />
+            <stop offset="75%" style="stop-color:#8b5cf6" />
+            <stop offset="100%" style="stop-color:#a855f7" />
+        </linearGradient>
+        
+        <filter id="lightning-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+            <feMerge> 
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+    </defs>
+    
+    
+    <g transform="translate(20, 20)">
+        <path d="M -8 -18 L 5 -5 L -1 -5 L 8 18 L -5 5 L 1 5 Z" fill="url(#lightning-main)" filter="url(#lightning-glow)" stroke="#64ffda" stroke-width="1" opacity="0.95">
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+        </path>
+        
+        
+        <path d="M -6 -15 L 3 -6 L -0.5 -6 L 6 15 L -3 6 L 0.5 6 Z" fill="#64ffda" opacity="0.6" />
+              
+        
+        <path d="M -4 -12 L 2 -7 L -0.2 -7 L 4 12 L -2 7 L 0.2 7 Z" fill="#ffffff" opacity="0.9" />
+    </g>
+    
+    
+    <circle cx="12" cy="15" r="1" fill="#64ffda" opacity="0">
+        <animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite" begin="0s" />
+    </circle>
+    <circle cx="28" cy="18" r="0.8" fill="#6366f1" opacity="0">
+        <animate attributeName="opacity" values="0;1;0" dur="2.2s" repeatCount="indefinite" begin="0.4s" />
+    </circle>
+    <circle cx="15" cy="28" r="1.2" fill="#8b5cf6" opacity="0">
+        <animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite" begin="0.8s" />
+    </circle>
+</svg>
