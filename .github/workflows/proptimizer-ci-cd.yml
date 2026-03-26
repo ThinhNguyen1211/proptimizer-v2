@@ -264,4 +264,4 @@ jobs:
           fi
 
           echo "Deploying stacks: ${STACKS[*]}"
-          npx aws-cdk@latest deploy "${STACKS[@]}" --require-approval never
+          npx cdk deploy "${STACKS[@]}" --exclusively --require-approval never
