@@ -6,6 +6,22 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: Force deploy even when no deploy-relevant files changed
+        required: false
+        type: boolean
+        default: true
+      deploy_backend:
+        description: Deploy backend stack (ProptimizerApiStack)
+        required: false
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: Deploy frontend stack (ProptimizerFrontendStack)
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: proptimizer-${{ github.ref }}
@@ -155,7 +171,7 @@ jobs:
 
   detect_deploy_changes:
     name: Detect Deploy-Relevant Changes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       deploy_backend: ${{ steps.evaluate.outputs.deploy_backend }}
@@ -197,13 +213,34 @@ jobs:
         run: |
           DEPLOY_BACKEND=false
           DEPLOY_FRONTEND=false
+          FORCE_DEPLOY=false
 
-          if [[ "${{ steps.filter.outputs.backend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
-            DEPLOY_BACKEND=true
+          # Force deploy on manual workflow_dispatch when requested
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_deploy }}" == "true" ]]; then
+            FORCE_DEPLOY=true
           fi
 
-          if [[ "${{ steps.filter.outputs.frontend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
-            DEPLOY_FRONTEND=true
+          # Force deploy on push when commit message contains [deploy]
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.event.head_commit.message }}" == *"[deploy]"* ]]; then
+            FORCE_DEPLOY=true
+          fi
+
+          if [[ "$FORCE_DEPLOY" == "true" ]]; then
+            if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              DEPLOY_BACKEND="${{ inputs.deploy_backend }}"
+              DEPLOY_FRONTEND="${{ inputs.deploy_frontend }}"
+            else
+              DEPLOY_BACKEND=true
+              DEPLOY_FRONTEND=true
+            fi
+          else
+            if [[ "${{ steps.filter.outputs.backend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
+              DEPLOY_BACKEND=true
+            fi
+
+            if [[ "${{ steps.filter.outputs.frontend }}" == "true" || "${{ steps.filter.outputs.prod }}" == "true" ]]; then
+              DEPLOY_FRONTEND=true
+            fi
           fi
 
           if [[ "$DEPLOY_BACKEND" == "true" || "$DEPLOY_FRONTEND" == "true" ]]; then
@@ -227,9 +264,9 @@ jobs:
 
   deploy_aws:
     name: Deploy Backend + Frontend (CDK)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect_deploy_changes.outputs.should_deploy == 'true'
+    if: (((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') && needs.detect_deploy_changes.outputs.should_deploy == 'true')
     runs-on: ubuntu-latest
-    needs: [ci_quality, build_extension_zip, detect_deploy_changes]
+    needs: [ci_quality, detect_deploy_changes]
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}

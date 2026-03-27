@@ -195,37 +195,66 @@ export const handler = awslambda.streamifyResponse(
 
       try {
         if (model.startsWith('gemini')) {
-          // ========== GEMINI STREAMING ==========
-          if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
-            responseStream.write('[ERROR: Gemini SDK not available on server]');
-            responseStream.end();
-            return;
-          }
+          // ========== GEMINI STREAMING (PRIMARY) WITH DEEPSEEK FALLBACK ==========
+          try {
+            if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
+              throw new Error('Gemini SDK not available on server');
+            }
 
-          console.log(`Routing to Gemini streaming: ${model}`);
+            console.log(`Routing to Gemini streaming: ${model}`);
 
-          const history = (existingMessages || []).map((m: any) => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }]
-          }));
+            const history = (existingMessages || []).map((m: any) => ({
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }]
+            }));
 
-          const geminiModel = genAI.getGenerativeModel({
-            model,
-            systemInstruction: SYSTEM_INSTRUCTION
-          });
+            const geminiModel = genAI.getGenerativeModel({
+              model,
+              systemInstruction: SYSTEM_INSTRUCTION
+            });
 
-          const chatSession = await geminiModel.startChat({
-            history,
-            generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.7 }
-          });
+            const chatSession = await geminiModel.startChat({
+              history,
+              generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.7 }
+            });
 
-          const result = await chatSession.sendMessageStream(userQuery);
+            const result = await chatSession.sendMessageStream(userQuery);
 
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            if (text) {
-              responseStream.write(text);
-              fullText += text;
+            for await (const chunk of result.stream) {
+              const text = chunk.text();
+              if (text) {
+                responseStream.write(text);
+                fullText += text;
+              }
+            }
+          } catch (geminiError: any) {
+            console.error('Gemini streaming failed, falling back to DeepSeek:', geminiError?.message || geminiError);
+
+            try {
+              const fallbackModel = 'deepseek-chat';
+              const promptForAI = [
+                { role: 'system' as const, content: SYSTEM_INSTRUCTION },
+                ...existingMessages.map((m: any) => ({ role: m.role, content: m.content })),
+                { role: 'user' as const, content: userQuery }
+              ];
+
+              const completion = await openai.chat.completions.create({
+                model: fallbackModel,
+                messages: promptForAI,
+                max_tokens: MAX_TOKENS,
+                temperature: 0.7,
+                stream: true
+              });
+
+              for await (const chunk of completion) {
+                const text = chunk.choices[0]?.delta?.content || '';
+                if (text) {
+                  responseStream.write(text);
+                  fullText += text;
+                }
+              }
+            } catch (deepseekError: any) {
+              throw new Error(`Both AI providers failed. ${deepseekError?.message || 'Unknown error'}`);
             }
           }
         } else {
