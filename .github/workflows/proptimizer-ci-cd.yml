@@ -235,6 +235,10 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
       CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      DEEPSEEK_API_KEY: ${{ secrets['DEEPSEEK_API_KEY'] }}
+      GEMINI_API_KEY: ${{ secrets['GEMINI_API_KEY'] }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets['TELEGRAM_BOT_TOKEN'] }}
+      TELEGRAM_CHAT_ID: ${{ secrets['TELEGRAM_CHAT_ID'] }}
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       VITE_OPTIMIZE_STREAM_URL: ${{ secrets.VITE_OPTIMIZE_STREAM_URL }}
       VITE_CHAT_STREAM_URL: ${{ secrets.VITE_CHAT_STREAM_URL }}
@@ -253,6 +257,25 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate backend runtime secrets
+        if: needs.detect_deploy_changes.outputs.deploy_backend == 'true'
+        shell: bash
+        run: |
+          REQUIRED=(
+            GEMINI_API_KEY
+            DEEPSEEK_API_KEY
+          )
+          MISSING=0
+          for VAR in "${REQUIRED[@]}"; do
+            if [[ -z "${!VAR}" ]]; then
+              echo "::error::Missing required secret for backend deploy: $VAR"
+              MISSING=1
+            fi
+          done
+          if [[ $MISSING -eq 1 ]]; then
+            exit 1
+          fi
 
       - name: Validate frontend build env
         if: needs.detect_deploy_changes.outputs.deploy_frontend == 'true'
